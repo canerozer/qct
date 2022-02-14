@@ -8,6 +8,7 @@
 import os
 import torch
 import numpy as np
+import pandas as pd
 import torch.distributed as dist
 from torchvision import datasets, transforms
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
@@ -15,7 +16,9 @@ from timm.data import Mixup
 from timm.data import create_transform
 
 from .cached_image_folder import CachedImageFolder
-from .samplers import SubsetRandomSampler
+from .samplers import SubsetRandomSampler, RADistributedSampler
+from .objectcxr import ForeignObjectDataset
+
 
 try:
     from torchvision.transforms import InterpolationMode
@@ -48,9 +51,14 @@ def build_loader(config):
     if config.DATA.ZIP_MODE and config.DATA.CACHE_MODE == 'part':
         indices = np.arange(dist.get_rank(), len(dataset_train), dist.get_world_size())
         sampler_train = SubsetRandomSampler(indices)
+    elif config.AUG.RA > 1:
+        sampler_train = RADistributedSampler(dataset_train, num_replicas=num_tasks,
+                                    repetitions=config.AUG.RA, len_factor=config.AUG.RA,
+                                    shuffle=True, drop_last=True)
     else:
+        # Try also making # of repetitions as 1.
         sampler_train = torch.utils.data.DistributedSampler(
-            dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True
+            dataset_train, num_replicas=num_tasks, rank=global_rank, shuffle=True,
         )
 
     if config.TEST.SEQUENTIAL:
@@ -104,6 +112,40 @@ def build_dataset(is_train, config):
         nb_classes = 1000
     elif config.DATA.DATASET == 'imagenet22K':
         raise NotImplementedError("Imagenet-22K will come soon.")
+    elif config.DATA.DATASET == 'OCXR':
+        prefix = 'train' if is_train else 'dev'
+
+        meta = config.DATA.DATA_PATH + prefix + ".csv"
+        labels = pd.read_csv(meta, na_filter=False)
+        print(f'{len(os.listdir(config.DATA.DATA_PATH + prefix))} pics in {config.DATA.DATA_PATH} {prefix}/')
+        print(labels['annotation'])
+
+        labels_dict = dict(zip(labels.image_name,
+                                     labels.annotation))
+
+        dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
+                                        labels_dict=labels_dict, transform=transform)
+        nb_classes = 2
+        # meta_train = config.DATA.DATA_PATH + 'train.csv'
+        # meta_dev = config.DATA.DATA_PATH + 'dev.csv'
+
+        # labels_tr = pd.read_csv(meta_train, na_filter=False)
+        # labels_dev = pd.read_csv(meta_dev, na_filter=False)
+
+        # print(f'{len(os.listdir(config.DATA.DATA_PATH + "train"))} pics in {config.DATA.DATA_PATH}train/')
+        # print(f'{len(os.listdir(config.DATA.DATA_PATH + "dev"))} pics in {config.DATA.DATA_PATH}dev/')
+
+        # print(labels_tr['annotation'])
+        # #labels_tr = labels_tr.loc[labels_tr['annotation'].astype(bool)]
+        # #labels_tr = labels_tr.reset_index(drop=True)
+        # img_class_dict_tr = dict(zip(labels_tr.image_name,
+        #                             labels_tr.annotation))
+        # img_class_dict_dev = dict(zip(labels_dev.image_name,
+        #                             labels_dev.annotation))
+
+        # dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
+        #                                labels_dict=img_class_dict_tr)
+        # raise NotImplementedError("Object-CXR Under Constrtuction.")
     else:
         raise NotImplementedError("We only support ImageNet Now.")
 

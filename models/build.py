@@ -5,6 +5,9 @@
 # Written by Ze Liu
 # --------------------------------------------------------
 
+import torch.nn as nn
+from torchvision import models as tvmodels
+
 from .swin_transformer import SwinTransformer
 from .swin_mlp import SwinMLP
 
@@ -43,6 +46,14 @@ def build_model(config):
                         ape=config.MODEL.SWIN_MLP.APE,
                         patch_norm=config.MODEL.SWIN_MLP.PATCH_NORM,
                         use_checkpoint=config.TRAIN.USE_CHECKPOINT)
+    elif model_type == "resnet34":
+        model = tvmodels.resnet34(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+    elif model_type == "resnet50":
+        model = tvmodels.resnet50(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
     else:
         raise NotImplementedError(f"Unkown model: {model_type}")
 

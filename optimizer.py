@@ -18,15 +18,50 @@ def build_optimizer(config, model):
         skip = model.no_weight_decay()
     if hasattr(model, 'no_weight_decay_keywords'):
         skip_keywords = model.no_weight_decay_keywords()
-    parameters = set_weight_decay(model, skip, skip_keywords)
-
+    
     opt_lower = config.TRAIN.OPTIMIZER.NAME.lower()
     optimizer = None
+
+    # Does not work, to be checked.
+    if config.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_LAYER:
+        for (name, module) in model.named_children():
+            for layer in module.children():
+                for param in layer.parameters():
+                    if "patch_embed" in name:
+                        param.requires_grad = False
+                    else:
+                        param.requires_grad = True
+
+    if config.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_PLUS_BLOCKS:
+        for (name, module) in model.named_children():
+            for (layername, layer) in module.named_children():
+                for param in layer.parameters():
+                    if "patch_embed" in name:
+                        param.requires_grad = False
+                    elif "layers" in name:
+                        if layername in ["0", "1", "2", "3"]:
+                            param.requires_grad = False
+
+    for name, module in model.named_parameters():
+        print(name, module.requires_grad)
+    if config.TRAIN.OPTIMIZER.FINE_TUNE_FC_ONLY:
+        for (name, module) in model.named_children():
+            if "head" == name:
+                module.requires_grad = True
+                print(f"setting {name} trainable.")
+            for layer in module.children():
+                for param in layer.parameters():
+                    param.requires_grad = False
+    
+    parameters = set_weight_decay(model, skip, skip_keywords)
+
     if opt_lower == 'sgd':
-        optimizer = optim.SGD(parameters, momentum=config.TRAIN.OPTIMIZER.MOMENTUM, nesterov=True,
+        optimizer = optim.SGD(parameters,
+                              momentum=config.TRAIN.OPTIMIZER.MOMENTUM, nesterov=True,
                               lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
     elif opt_lower == 'adamw':
-        optimizer = optim.AdamW(parameters, eps=config.TRAIN.OPTIMIZER.EPS, betas=config.TRAIN.OPTIMIZER.BETAS,
+        optimizer = optim.AdamW(parameters,
+                                eps=config.TRAIN.OPTIMIZER.EPS, betas=config.TRAIN.OPTIMIZER.BETAS,
                                 lr=config.TRAIN.BASE_LR, weight_decay=config.TRAIN.WEIGHT_DECAY)
 
     return optimizer

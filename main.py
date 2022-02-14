@@ -11,6 +11,7 @@ import random
 import argparse
 import datetime
 import numpy as np
+import pandas as pd
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -25,13 +26,15 @@ from data import build_loader
 from lr_scheduler import build_scheduler
 from optimizer import build_optimizer
 from logger import create_logger
-from utils import load_checkpoint, load_pretrained, save_checkpoint, get_grad_norm, auto_resume_helper, reduce_tensor
+from utils import (load_checkpoint, load_pretrained, save_checkpoint, get_grad_norm,
+                   auto_resume_helper, reduce_tensor, calculate_roc_auc)
 
 try:
     # noinspection PyUnresolvedReferences
     from apex import amp
 except ImportError:
-    amp = None
+    from torch.cuda import amp
+    # amp = None
 
 
 def parse_option():
@@ -127,15 +130,16 @@ def main(config):
         if config.EVAL_MODE:
             return
 
-    if config.MODEL.PRETRAINED and (not config.MODEL.RESUME):
-        load_pretrained(config, model_without_ddp, logger)
-        acc1, acc5, loss = validate(config, data_loader_val, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
+    # if config.MODEL.PRETRAINED and (not config.MODEL.RESUME):
+    #     load_pretrained(config, model_without_ddp, logger)
+    #     acc1, acc5, loss = validate(config, data_loader_val, model)
+    #     logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
 
     if config.THROUGHPUT_MODE:
         throughput(data_loader_val, model, logger)
         return
 
+    result_dumper = {'epochs':[], 'acc1':[], 'auc':[], 'loss':[]}
     logger.info("Start training")
     start_time = time.time()
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
@@ -146,13 +150,23 @@ def main(config):
             save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
-        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         max_accuracy = max(max_accuracy, acc1)
+        
+        logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
+        result_dumper['epochs'].append(epoch)
+        result_dumper['acc1'].append(acc1)
+        if config.DATA.DATASET == 'OCXR':
+            result_dumper['auc'].append(acc5)
+            result_dumper['loss'].append(loss)
+
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     logger.info('Training time {}'.format(total_time_str))
+
+    df = pd.DataFrame(result_dumper)
+    df.to_csv(os.path.join(config.OUTPUT, 'summary.csv'))
 
 
 def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mixup_fn, lr_scheduler):
@@ -245,6 +259,7 @@ def validate(config, data_loader, model):
     loss_meter = AverageMeter()
     acc1_meter = AverageMeter()
     acc5_meter = AverageMeter()
+    roc_auc_meter = AverageMeter()
 
     end = time.time()
     for idx, (images, target) in enumerate(data_loader):
@@ -256,15 +271,23 @@ def validate(config, data_loader, model):
 
         # measure accuracy and record loss
         loss = criterion(output, target)
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        if config.DATA.DATASET == "OCXR":
+            acc1 = accuracy(output, target, topk=(1, ))[0]
+            auc = calculate_roc_auc(output, target)
+            # auc = reduce_tensor(auc)
+            roc_auc_meter.update(auc.item(), target.size(0))
+        else:
+            acc1, acc5 = accuracy(output, target, topk=(1, 5))
 
         acc1 = reduce_tensor(acc1)
-        acc5 = reduce_tensor(acc5)
         loss = reduce_tensor(loss)
 
         loss_meter.update(loss.item(), target.size(0))
         acc1_meter.update(acc1.item(), target.size(0))
-        acc5_meter.update(acc5.item(), target.size(0))
+
+        if config.DATA.DATASET != "OCXR":
+            acc5 = reduce_tensor(acc5)
+            acc5_meter.update(acc5.item(), target.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -272,15 +295,28 @@ def validate(config, data_loader, model):
 
         if idx % config.PRINT_FREQ == 0:
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
-            logger.info(
-                f'Test: [{idx}/{len(data_loader)}]\t'
-                f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
-                f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
-                f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
-                f'Mem {memory_used:.0f}MB')
-    logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
-    return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
+            if config.DATA.DATASET == "OCXR":
+                logger.info(
+                    f'Test: [{idx}/{len(data_loader)}]\t'
+                    f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                    f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
+                    f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
+                    f'Auc@1 {roc_auc_meter.val:.3f} ({roc_auc_meter.avg:.3f})\t'
+                    f'Mem {memory_used:.0f}MB')
+            else:
+                logger.info(
+                    f'Test: [{idx}/{len(data_loader)}]\t'
+                    f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                    f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
+                    f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
+                    f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
+                    f'Mem {memory_used:.0f}MB')
+    if config.DATA.DATASET == "OCXR":
+        logger.info(f' * Acc@1 {acc1_meter.avg:.3f}  * AUC {roc_auc_meter.avg:.3f}')
+        return acc1_meter.avg, roc_auc_meter.avg, loss_meter.avg
+    else:
+        logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
+        return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
 
 @torch.no_grad()
@@ -317,7 +353,7 @@ if __name__ == '__main__':
         rank = -1
         world_size = -1
     torch.cuda.set_device(config.LOCAL_RANK)
-    torch.distributed.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
+    torch.distributed.init_process_group(backend='gloo', init_method='env://', world_size=world_size, rank=rank)
     torch.distributed.barrier()
 
     seed = config.SEED + dist.get_rank()

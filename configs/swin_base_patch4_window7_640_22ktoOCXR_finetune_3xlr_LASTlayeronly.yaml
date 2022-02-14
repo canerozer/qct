@@ -1,0 +1,22 @@
+DATA:
+  DATASET: OCXR
+  DATA_PATH: /home/ilkay/Documents/caner/datasets/object-CXR/
+  IMG_SIZE: 640
+MODEL:
+  TYPE: swin
+  NAME: swin_base_patch4_window7_640_22ktoOCXR_finetune_3xlr_LASTlayeronly
+  DROP_PATH_RATE: 0.2
+  SWIN:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 5
+TRAIN:
+  EPOCHS: 30
+  WARMUP_EPOCHS: 5
+  WEIGHT_DECAY: 1e-8
+  BASE_LR: 6e-05
+  WARMUP_LR: 2e-08
+  MIN_LR: 2e-07
+  OPTIMIZER:
+    FINE_TUNE_FC_ONLY: True

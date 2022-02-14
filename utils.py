@@ -8,6 +8,9 @@
 import os
 import torch
 import torch.distributed as dist
+import torch.nn.functional as F
+
+from sklearn.metrics import roc_auc_score
 
 try:
     # noinspection PyUnresolvedReferences
@@ -180,3 +183,13 @@ def reduce_tensor(tensor):
     dist.all_reduce(rt, op=dist.ReduceOp.SUM)
     rt /= dist.get_world_size()
     return rt
+
+
+def calculate_roc_auc(output, target):
+
+    logit, pred = torch.max(output, 1)
+    probs = F.softmax(output, dim=1).cpu().numpy()
+
+    auc = roc_auc_score(target.cpu().numpy(), probs[:, 1])
+
+    return auc

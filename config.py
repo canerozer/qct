@@ -49,6 +49,8 @@ _C.MODEL.NAME = 'swin_tiny_patch4_window7_224'
 # Pretrained weight from checkpoint, could be imagenet22k pretrained weight
 # could be overwritten by command line argument
 _C.MODEL.PRETRAINED = ''
+# Using pretrained models of Torchvision
+_C.MODEL.TORCHVISION_PRETRAINED = False 
 # Checkpoint to resume, could be overwritten by command line argument
 _C.MODEL.RESUME = ''
 # Number of classes, overwritten in data preparation
@@ -125,6 +127,12 @@ _C.TRAIN.OPTIMIZER.EPS = 1e-8
 _C.TRAIN.OPTIMIZER.BETAS = (0.9, 0.999)
 # SGD momentum
 _C.TRAIN.OPTIMIZER.MOMENTUM = 0.9
+# Do not train the embedding layer
+_C.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_LAYER = False
+# Do not train the embedding layer and blocks
+_C.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_PLUS_BLOCKS = False
+# Only fine-tune the final FC layer
+_C.TRAIN.OPTIMIZER.FINE_TUNE_FC_ONLY = False
 
 # -----------------------------------------------------------------------------
 # Augmentation settings
@@ -152,6 +160,8 @@ _C.AUG.MIXUP_PROB = 1.0
 _C.AUG.MIXUP_SWITCH_PROB = 0.5
 # How to apply mixup/cutmix params. Per "batch", "pair", or "elem"
 _C.AUG.MIXUP_MODE = 'batch'
+# Repeated Augmentation Setting, enabled if > 1
+_C.AUG.RA = 1
 
 # -----------------------------------------------------------------------------
 # Testing settings
