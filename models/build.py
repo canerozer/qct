@@ -54,6 +54,14 @@ def build_model(config):
         model = tvmodels.resnet50(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+    elif model_type == "resnet101":
+        model = tvmodels.resnet101(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+    elif model_type == "resnet152":
+        model = tvmodels.resnet152(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
     else:
         raise NotImplementedError(f"Unkown model: {model_type}")
 
