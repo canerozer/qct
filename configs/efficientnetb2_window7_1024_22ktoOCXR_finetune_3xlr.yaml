@@ -1,0 +1,21 @@
+DATA:
+  DATASET: OCXR
+  DATA_PATH: /home/ilkay/Documents/caner/datasets/object-CXR/
+  IMG_SIZE: 1024
+MODEL:
+  TYPE: efficientnetb2
+  NAME: efficientnetb2_window8_1024_22ktoOCXR_finetune_3xlr
+  TORCHVISION_PRETRAINED: true
+  DROP_PATH_RATE: 0.2
+  SWIN:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 8
+TRAIN:
+  EPOCHS: 60
+  WARMUP_EPOCHS: 5
+  WEIGHT_DECAY: 1e-8
+  BASE_LR: 6e-05
+  WARMUP_LR: 2e-08
+  MIN_LR: 2e-07

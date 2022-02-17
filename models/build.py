@@ -62,6 +62,55 @@ def build_model(config):
         model = tvmodels.resnet152(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+    elif model_type == "efficientnetb0":
+        model = tvmodels.efficientnet_b0(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.4, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
+    elif model_type == "efficientnetb1":
+        model = tvmodels.efficientnet_b1(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.4, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
+    elif model_type == "efficientnetb2":
+        model = tvmodels.efficientnet_b2(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.4, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
+    elif model_type == "efficientnetb4":
+        model = tvmodels.efficientnet_b4(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.4, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
+    elif model_type == "efficientnetb5":
+        model = tvmodels.efficientnet_b5(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.4, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
+    elif model_type == "efficientnetb6":
+        model = tvmodels.efficientnet_b6(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.5, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
+    elif model_type == "efficientnetb7":
+        model = tvmodels.efficientnet_b7(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.5, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
     else:
         raise NotImplementedError(f"Unkown model: {model_type}")
 
