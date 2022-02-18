@@ -50,6 +50,7 @@ def parse_option():
 
     # easy config modification
     parser.add_argument('--batch-size', type=int, help="batch size for single GPU")
+    parser.add_argument('--test-batch-size', type=int, help="testing batch size for single GPU")
     parser.add_argument('--data-path', type=str, help='path to dataset')
     parser.add_argument('--zip', action='store_true', help='use zipped dataset instead of folder dataset')
     parser.add_argument('--cache-mode', type=str, default='part', choices=['no', 'full', 'part'],
@@ -166,7 +167,7 @@ def main(config):
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
         result_dumper['epochs'].append(epoch)
         result_dumper['acc1'].append(acc1)
-        if config.DATA.DATASET == 'OCXR':
+        if config.DATA.DATASET in ['LVOT', 'OCXR']:
             result_dumper['auc'].append(acc5)
             result_dumper['loss'].append(loss)
 
@@ -361,7 +362,7 @@ def validate(config, data_loader, model):
 
         # measure accuracy and record loss
         loss = criterion(output, target)
-        if config.DATA.DATASET == "OCXR":
+        if config.DATA.DATASET in ["LVOT", "OCXR"]:
             acc1 = accuracy(output, target, topk=(1, ))[0]
             auc = calculate_roc_auc(output, target)
             # auc = reduce_tensor(auc)
@@ -375,7 +376,7 @@ def validate(config, data_loader, model):
         loss_meter.update(loss.item(), target.size(0))
         acc1_meter.update(acc1.item(), target.size(0))
 
-        if config.DATA.DATASET != "OCXR":
+        if config.DATA.DATASET not in ["LVOT", "OCXR"]:
             acc5 = reduce_tensor(acc5)
             acc5_meter.update(acc5.item(), target.size(0))
 
@@ -385,7 +386,7 @@ def validate(config, data_loader, model):
 
         if idx % config.PRINT_FREQ == 0:
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
-            if config.DATA.DATASET == "OCXR":
+            if config.DATA.DATASET in ["LVOT", "OCXR"]:
                 logger.info(
                     f'Test: [{idx}/{len(data_loader)}]\t'
                     f'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
@@ -401,7 +402,7 @@ def validate(config, data_loader, model):
                     f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
                     f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
                     f'Mem {memory_used:.0f}MB')
-    if config.DATA.DATASET == "OCXR":
+    if config.DATA.DATASET in ["LVOT", "OCXR"]:
         logger.info(f' * Acc@1 {acc1_meter.avg:.3f}  * AUC {roc_auc_meter.avg:.3f}')
         return acc1_meter.avg, roc_auc_meter.avg, loss_meter.avg
     else:

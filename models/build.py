@@ -83,6 +83,13 @@ def build_model(config):
             # nn.Dropout(p=0.4, inplace=True),
             nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
         )
+    elif model_type == "efficientnetb3":
+        model = tvmodels.efficientnet_b3(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
+        num_ftrs = model.classifier[1].in_features
+        model.classifier = nn.Sequential(
+            # nn.Dropout(p=0.4, inplace=True),
+            nn.Linear(num_ftrs, config.MODEL.NUM_CLASSES)
+        )
     elif model_type == "efficientnetb4":
         model = tvmodels.efficientnet_b4(pretrained=config.MODEL.TORCHVISION_PRETRAINED)
         num_ftrs = model.classifier[1].in_features
