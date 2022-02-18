@@ -18,6 +18,7 @@ from timm.data import create_transform
 from .cached_image_folder import CachedImageFolder
 from .samplers import SubsetRandomSampler, RADistributedSampler
 from .objectcxr import ForeignObjectDataset
+from .lvot import UKBiobankLVOTDataset
 
 
 try:
@@ -126,28 +127,56 @@ def build_dataset(is_train, config):
         dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
                                         labels_dict=labels_dict, transform=transform)
         nb_classes = 2
-        # meta_train = config.DATA.DATA_PATH + 'train.csv'
-        # meta_dev = config.DATA.DATA_PATH + 'dev.csv'
+    elif config.DATA.DATASET == 'LVOT':
+        prefix = 'train' if is_train else 'val'
 
-        # labels_tr = pd.read_csv(meta_train, na_filter=False)
-        # labels_dev = pd.read_csv(meta_dev, na_filter=False)
+        meta = os.path.join(config.DATA.DATA_PATH, 'labels', prefix+'.txt')
 
-        # print(f'{len(os.listdir(config.DATA.DATA_PATH + "train"))} pics in {config.DATA.DATA_PATH}train/')
-        # print(f'{len(os.listdir(config.DATA.DATA_PATH + "dev"))} pics in {config.DATA.DATA_PATH}dev/')
+        # train = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/train.txt
+        # val = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/val.txt
+        # test = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/test.txt
 
-        # print(labels_tr['annotation'])
-        # #labels_tr = labels_tr.loc[labels_tr['annotation'].astype(bool)]
-        # #labels_tr = labels_tr.reset_index(drop=True)
-        # img_class_dict_tr = dict(zip(labels_tr.image_name,
-        #                             labels_tr.annotation))
-        # img_class_dict_dev = dict(zip(labels_dev.image_name,
-        #                             labels_dev.annotation))
-
-        # dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
-        #                                labels_dict=img_class_dict_tr)
-        # raise NotImplementedError("Object-CXR Under Constrtuction.")
+        dataset = UKBiobankLVOTDataset(meta,
+                                       datatype=prefix,
+                                       transform=transform)
+        nb_classes = 2
     else:
         raise NotImplementedError("We only support ImageNet Now.")
+
+    return dataset, nb_classes
+
+
+def build_test_dataset(is_test, config):
+    transform = build_transform(False, config)
+    if config.DATA.DATASET == 'OCXR':
+        prefix = 'test' if is_test else 'dev'
+
+        meta = config.DATA.DATA_PATH + prefix + ".csv"
+        labels = pd.read_csv(meta, na_filter=False)
+        print(f'{len(os.listdir(config.DATA.DATA_PATH + prefix))} pics in {config.DATA.DATA_PATH} {prefix}/')
+        print(labels['annotation'])
+
+        labels_dict = dict(zip(labels.image_name,
+                                     labels.annotation))
+
+        dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
+                                        labels_dict=labels_dict, transform=transform)
+        nb_classes = 2
+    elif config.DATA.DATASET == 'LVOT':
+        prefix = 'test' if is_test else 'val'
+
+        meta = os.path.join(config.DATA.DATA_PATH, 'labels', prefix+'.txt')
+
+        # train = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/train.txt
+        # val = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/val.txt
+        # test = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/test.txt
+
+        dataset = UKBiobankLVOTDataset(meta,
+                                       datatype=prefix,
+                                       transform=transform)
+        nb_classes = 2
+    else:
+        raise NotImplementedError("We only support testing on LVOT and OCXR Now.")
 
     return dataset, nb_classes
 
