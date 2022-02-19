@@ -23,35 +23,35 @@ def build_optimizer(config, model):
     optimizer = None
 
     # Does not work, to be checked.
-    if config.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_LAYER:
-        for (name, module) in model.named_children():
-            for layer in module.children():
-                for param in layer.parameters():
-                    if "patch_embed" in name:
-                        param.requires_grad = False
-                    else:
-                        param.requires_grad = True
+    # if config.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_LAYER:
+    #     for (name, module) in model.named_children():
+    #         for layer in module.children():
+    #             for param in layer.parameters():
+    #                 if "patch_embed" in name:
+    #                     param.requires_grad = False
+    #                 else:
+    #                     param.requires_grad = True
 
-    if config.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_PLUS_BLOCKS:
-        for (name, module) in model.named_children():
-            for (layername, layer) in module.named_children():
-                for param in layer.parameters():
-                    if "patch_embed" in name:
-                        param.requires_grad = False
-                    elif "layers" in name:
-                        if layername in ["0", "1", "2", "3"]:
-                            param.requires_grad = False
+    # if config.TRAIN.OPTIMIZER.NO_TRAIN_EMBEDDING_PLUS_BLOCKS:
+    #     for (name, module) in model.named_children():
+    #         for (layername, layer) in module.named_children():
+    #             for param in layer.parameters():
+    #                 if "patch_embed" in name:
+    #                     param.requires_grad = False
+    #                 elif "layers" in name:
+    #                     if layername in ["0", "1", "2", "3"]:
+    #                         param.requires_grad = False
 
-    for name, module in model.named_parameters():
-        print(name, module.requires_grad)
-    if config.TRAIN.OPTIMIZER.FINE_TUNE_FC_ONLY:
-        for (name, module) in model.named_children():
-            if "head" == name:
-                module.requires_grad = True
-                print(f"setting {name} trainable.")
-            for layer in module.children():
-                for param in layer.parameters():
-                    param.requires_grad = False
+    # for name, module in model.named_parameters():
+    #     print(name, module.requires_grad)
+    # if config.TRAIN.OPTIMIZER.FINE_TUNE_FC_ONLY:
+    #     for (name, module) in model.named_children():
+    #         if "head" == name:
+    #             module.requires_grad = True
+    #             print(f"setting {name} trainable.")
+    #         for layer in module.children():
+    #             for param in layer.parameters():
+    #                 param.requires_grad = False
     
     parameters = set_weight_decay(model, skip, skip_keywords)
 
