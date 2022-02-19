@@ -26,6 +26,10 @@ This repo is the official implementation of ["Swin Transformer: Hierarchical Vis
 
 
 ## Updates
+***02/14/2021***
+
+1. We expanded the available datasets by adding Object-CXR and LVOT Dataset.
+
 ***10/12/2021***
 
 `News`: Swin Transformer received ICCV 2021 best paper award (Marr Prize).
