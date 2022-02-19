@@ -1,0 +1,17 @@
+DATA:
+  DATASET: LVOT
+  DATA_PATH: /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices
+  IMG_SIZE: 224
+MODEL:
+  TYPE: swin
+  NAME: swin_base_patch4_window7_224_LVOT
+  DROP_PATH_RATE: 0.2
+  SWIN:
+    EMBED_DIM: 128
+    DEPTHS: [ 2, 2, 18, 2 ]
+    NUM_HEADS: [ 4, 8, 16, 32 ]
+    WINDOW_SIZE: 7
+TRAIN:
+  EPOCHS: 300
+  WARMUP_EPOCHS: 5
+  WEIGHT_DECAY: 1e-8
