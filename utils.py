@@ -6,6 +6,7 @@
 # --------------------------------------------------------
 
 import os
+from tabnanny import check
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
@@ -187,6 +188,15 @@ def auto_resume_helper(output_dir):
     return resume_file
 
 
+def list_all_checkpoints(output_dir):
+    checkpoints = os.listdir(output_dir)
+    checkpoints = [ckpt for ckpt in checkpoints if ckpt.endswith('pth')]
+    checkpoints = [os.path.join(output_dir, ckpt) for ckpt in checkpoints]
+    checkpoints = list(sorted(checkpoints, key=os.path.getmtime))
+    print(f"All checkpoints founded in {output_dir}: {checkpoints}")
+    return checkpoints
+
+    
 def reduce_tensor(tensor):
     rt = tensor.clone()
     dist.all_reduce(rt, op=dist.ReduceOp.SUM)

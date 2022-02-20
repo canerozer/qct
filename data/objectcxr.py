@@ -92,6 +92,18 @@ class ForeignObjectDataset(object):
                 img = self.transform(img)
 
             return img, label
+        
+        if self.datatype == 'test':
+            
+            if self.labels_dict[img_name] == '':
+                label = 0
+            else:
+                label = 1
+            
+            if self.transform is not None:
+                img = self.transform(img)
+
+            return img, label
 
     def __len__(self):
         return len(self.image_files_list)
