@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 
 class ForeignObjectDataset(object):
     
-    def __init__(self, datafolder, datatype='train', transform = True, labels_dict={}):
+    def __init__(self, datafolder, datatype='train', transform = True, labels_dict={}, output_loc=False):
         datafolder = os.path.join(datafolder, datatype)
         self.datafolder = datafolder
         self.datatype = datatype
@@ -16,6 +16,7 @@ class ForeignObjectDataset(object):
         self.image_files_list = [s for s in sorted(os.listdir(datafolder)) if s in labels_dict.keys()]
         self.transform = transform
         self.annotations = [labels_dict[i] for i in self.image_files_list]
+        self.output_loc = output_loc
             
     def __getitem__(self, idx):
         # load images 
@@ -33,7 +34,7 @@ class ForeignObjectDataset(object):
                 target = np.array(0)
             else:
                 target = np.array(1)
-            """
+
             if type(annotation) == str:
                 annotation_list = annotation.split(';')
                 for anno in annotation_list:
@@ -54,11 +55,6 @@ class ForeignObjectDataset(object):
                     ymax = max(y)/height * 600
                     boxes.append([xmin, ymin, xmax, ymax])
 
-            if len(boxes) > 0:
-                target = np.array(1)
-            else:
-                target = np.array(0)
-            """
             # convert everything into a torch.Tensor
             #boxes = torch.as_tensor(boxes, dtype=torch.float32)
             # there is only one class
@@ -91,6 +87,9 @@ class ForeignObjectDataset(object):
             if self.transform is not None:
                 img = self.transform(img)
 
+            if self.output_loc:
+                return img, label, boxes
+
             return img, label
         
         if self.datatype == 'test':
@@ -102,6 +101,9 @@ class ForeignObjectDataset(object):
             
             if self.transform is not None:
                 img = self.transform(img)
+
+            if self.output_loc:
+                return img, label, boxes
 
             return img, label
 

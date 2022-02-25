@@ -9,12 +9,14 @@ from torch.utils.data import Dataset
 
 
 class UKBiobankLVOTDataset(Dataset):
-    def __init__(self, label_file, datatype=None, shuffle=True, transform=None, seed=0, debug=False):
+    def __init__(self, label_file, datatype=None, shuffle=True, transform=None, seed=0, debug=False,
+                 output_loc=False):
         self.label_file = label_file
         self.datatype = datatype
         self.transform = transform
         self.seed = seed
         self.debug = debug
+        self.output_loc = output_loc
         self.construct_labels()
         if not debug:
             self.read_images()
