@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 
 class UKBiobankLVOTDataset(Dataset):
     def __init__(self, label_file, datatype=None, shuffle=True, transform=None, seed=0, debug=False,
-                 output_loc=False):
+                 output_loc=False, config=None, segm_folder=None):
         self.label_file = label_file
         self.datatype = datatype
         self.transform = transform
@@ -20,23 +20,41 @@ class UKBiobankLVOTDataset(Dataset):
         self.construct_labels()
         if not debug:
             self.read_images()
+        self.output_loc = output_loc
+        if output_loc:
+            self.config = config
+            self.segm_folder = config.SEGM_FOLDER
+            self.process_segmentation_maps()
         self.shuffle(shuffle)
+
+    def process_segmentation_maps(self):
+        self.segm_maps = []
+        for fn in self.filenames:
+            segm_map_path = os.path.join(self.segm_folder, fn)
+            segm_map = Image.open(segm_map_path).convert('1')
+            print(segm_map.min(), segm_map.max())
+            exit()
+
+
 
     def construct_labels(self):
         self.filenames = []
+        self.fullpaths = []
         self.labels =  []
 
         with open(self.label_file, 'r') as f:
             content = f.read().split("\n")[:-1]
 
         for line in content:
-            fn, label = line.split(" ")
+            fullpath, label = line.split(" ")
+            fn = fullpath.split('/')[-1]
             self.filenames.append(fn)
+            self.fullpaths.append(fullpath)
             self.labels.append(int(label))
 
     def read_images(self):
         self.images = []
-        for img_name in self.filenames:
+        for img_name in self.fullpaths:
             img = Image.open(img_name).convert("RGB")
             self.images.append(img)
 
@@ -46,13 +64,14 @@ class UKBiobankLVOTDataset(Dataset):
             idxs = list(range(len))
             random.Random(self.seed).shuffle(idxs)
             self.filenames = [self.filenames[idx] for idx in idxs]
+            self.fullpaths = [self.fullpaths[idx] for idx in idxs]
             self.labels = [self.labels[idx] for idx in idxs]
             if not self.debug:
                 self.images = [self.images[idx] for idx in idxs]
 
     def __getitem__(self, idx):
         if self.debug:
-            img_name = self.filenames[idx]
+            img_name = self.fullpaths[idx]
             img = Image.open(img_name).convert("RGB")
         else:
             img = self.images[idx]
@@ -68,4 +87,4 @@ class UKBiobankLVOTDataset(Dataset):
         return img, target
 
     def __len__(self):
-        return len(self.filenames)
+        return len(self.fullpaths)

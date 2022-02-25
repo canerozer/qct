@@ -8,8 +8,12 @@ import torchvision.transforms as transforms
 
 class ForeignObjectDataset(object):
     
-    def __init__(self, datafolder, datatype='train', transform = True, labels_dict={}, output_loc=False):
-        datafolder = os.path.join(datafolder, datatype)
+    # def __init__(self, datafolder, datatype='train', transform=True, labels_dict={}, output_loc=False,
+    #             config=None):
+    def __init__(self, config, datatype='train', transform=True, labels_dict={}, output_loc=False,
+                 ):
+        datafolder = os.path.join(config.DATA.DATA_PATH, datatype)
+        # datafolder = os.path.join(datafolder, datatype)
         self.datafolder = datafolder
         self.datatype = datatype
         self.labels_dict = labels_dict
@@ -17,13 +21,14 @@ class ForeignObjectDataset(object):
         self.transform = transform
         self.annotations = [labels_dict[i] for i in self.image_files_list]
         self.output_loc = output_loc
+        self.config = config
             
     def __getitem__(self, idx):
         # load images 
         img_name = self.image_files_list[idx]
         img_path = os.path.join(self.datafolder, img_name)
         img = Image.open(img_path).convert("RGB")
-        width, height = img.size[0], img.size[1]  
+        width, height = img.size[0], img.size[1]
         
         if self.datatype == 'train':
             annotation = self.labels_dict[img_name]
@@ -49,11 +54,12 @@ class ForeignObjectDataset(object):
                         else:
                             y.append(float(anno[i]))
                         
-                    xmin = min(x)/width * 600
-                    xmax = max(x)/width * 600
-                    ymin = min(y)/height * 600
-                    ymax = max(y)/height * 600
+                    xmin = min(x)/width * self.config.DATA.IMG_SIZE
+                    xmax = max(x)/width * self.config.DATA.IMG_SIZE
+                    ymin = min(y)/height * self.config.DATA.IMG_SIZE
+                    ymax = max(y)/height * self.config.DATA.IMG_SIZE
                     boxes.append([xmin, ymin, xmax, ymax])
+                print(boxes)
 
             # convert everything into a torch.Tensor
             #boxes = torch.as_tensor(boxes, dtype=torch.float32)

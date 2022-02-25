@@ -159,7 +159,7 @@ def build_test_dataset(is_test, config, output_loc=False):
         labels_dict = dict(zip(labels.image_name,
                                      labels.annotation))
 
-        dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
+        dataset = ForeignObjectDataset(config, datatype=prefix,
                                         labels_dict=labels_dict, transform=transform,
                                         output_loc=output_loc)
         nb_classes = 2
@@ -175,7 +175,8 @@ def build_test_dataset(is_test, config, output_loc=False):
         dataset = UKBiobankLVOTDataset(meta,
                                        datatype=prefix,
                                        transform=transform,
-                                       output_loc=output_loc)
+                                       output_loc=output_loc,
+                                       config=config)
         nb_classes = 2
     else:
         raise NotImplementedError("We only support testing on LVOT and OCXR Now.")
