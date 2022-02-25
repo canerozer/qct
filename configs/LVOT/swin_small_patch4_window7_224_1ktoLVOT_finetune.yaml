@@ -4,17 +4,17 @@ DATA:
   IMG_SIZE: 224
 MODEL:
   TYPE: swin
-  NAME: swin_tiny_patch4_window7_224_1ktoLVOT_3xlr
+  NAME: swin_small_patch4_window7_224_1ktoLVOT
   DROP_PATH_RATE: 0.2
   SWIN:
     EMBED_DIM: 96
-    DEPTHS: [ 2, 2, 6, 2 ]
+    DEPTHS: [ 2, 2, 18, 2 ]
     NUM_HEADS: [ 3, 6, 12, 24 ]
     WINDOW_SIZE: 7
 TRAIN:
   EPOCHS: 60
   WARMUP_EPOCHS: 5
   WEIGHT_DECAY: 1e-8
-  BASE_LR: 6e-05
+  BASE_LR: 2e-05
   WARMUP_LR: 2e-08
   MIN_LR: 2e-07

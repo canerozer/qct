@@ -61,11 +61,11 @@ class UKBiobankLVOTDataset(Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        if self.datatype == "test":
-            name = img_name.split("/")[-1]
-            return img, target, name
-        else:
-            return img, target
+        # if self.datatype == "test":
+        #     name = img_name.split("/")[-1]
+        #     return img, target, name
+        # else:
+        return img, target
 
     def __len__(self):
         return len(self.filenames)
