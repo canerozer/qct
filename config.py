@@ -195,6 +195,9 @@ _C.EVAL_MODE = False
 _C.THROUGHPUT_MODE = False
 # local rank for DistributedDataParallel, given by command line argument
 _C.LOCAL_RANK = 0
+# Segmentation Folder
+_C.SEGM_FOLDER = None
+
 
 
 def _update_config_from_file(config, cfg_file):
