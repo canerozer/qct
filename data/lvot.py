@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 
 class UKBiobankLVOTDataset(Dataset):
     def __init__(self, label_file, datatype=None, shuffle=True, transform=None, seed=0, debug=False,
-                 output_loc=False, config=None, segm_folder=None):
+                 output_loc=False, output_name=False, config=None, segm_folder=None):
         self.label_file = label_file
         self.datatype = datatype
         self.transform = transform
@@ -24,16 +24,18 @@ class UKBiobankLVOTDataset(Dataset):
         if output_loc:
             self.config = config
             self.segm_folder = config.SEGM_FOLDER
-            self.process_segmentation_maps()
+            # self.process_segmentation_maps()
+        self.output_name = output_name
         self.shuffle(shuffle)
 
     def process_segmentation_maps(self):
-        self.segm_maps = []
-        for fn in self.filenames:
-            segm_map_path = os.path.join(self.segm_folder, fn)
-            segm_map = Image.open(segm_map_path).convert('1')
-            print(segm_map.min(), segm_map.max())
-            exit()
+        raise NotImplementedError
+        # self.segm_maps = []
+        # for fn in self.filenames:
+        #     segm_map_path = os.path.join(self.segm_folder, fn)
+        #     segm_map = Image.open(segm_map_path).convert('1')
+        #     print(segm_map.min(), segm_map.max())
+
 
 
 
@@ -70,8 +72,8 @@ class UKBiobankLVOTDataset(Dataset):
                 self.images = [self.images[idx] for idx in idxs]
 
     def __getitem__(self, idx):
+        img_name = self.fullpaths[idx]
         if self.debug:
-            img_name = self.fullpaths[idx]
             img = Image.open(img_name).convert("RGB")
         else:
             img = self.images[idx]
@@ -84,6 +86,12 @@ class UKBiobankLVOTDataset(Dataset):
         #     name = img_name.split("/")[-1]
         #     return img, target, name
         # else:
+        if self.output_loc:
+            return img, target, img_name, None
+        
+        if self.output_name:
+            return img, target, img_name
+
         return img, target
 
     def __len__(self):
