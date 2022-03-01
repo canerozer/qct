@@ -1,6 +1,10 @@
+from __future__ import annotations
 import os
+from typing import OrderedDict
 from PIL import Image
 import numpy as np
+import random
+from collections import OrderedDict
 
 import torch
 import torchvision.transforms as transforms
@@ -8,57 +12,44 @@ import torchvision.transforms as transforms
 
 class ForeignObjectDataset(object):
     
-    def __init__(self, datafolder, datatype='train', transform = True, labels_dict={}):
-        datafolder = os.path.join(datafolder, datatype)
+    # def __init__(self, datafolder, datatype='train', transform=True, labels_dict={}, output_loc=False,
+    #             config=None):
+    def __init__(self, config, datatype='train', transform=True, labels_dict={}, 
+                 output_name=False, output_loc=False,
+                 shuffle=True, seed=1):
+        datafolder = os.path.join(config.DATA.DATA_PATH, datatype)
+        # datafolder = os.path.join(datafolder, datatype)
         self.datafolder = datafolder
         self.datatype = datatype
+        if output_loc:
+            labels_dict = dict(filter(lambda x: x[1] != '', labels_dict.items()))
+        if output_name:
+            self.output_name = output_name
         self.labels_dict = labels_dict
         self.image_files_list = [s for s in sorted(os.listdir(datafolder)) if s in labels_dict.keys()]
         self.transform = transform
         self.annotations = [labels_dict[i] for i in self.image_files_list]
-            
+        self.output_loc = output_loc
+        self.config = config
+
+
     def __getitem__(self, idx):
         # load images 
         img_name = self.image_files_list[idx]
         img_path = os.path.join(self.datafolder, img_name)
         img = Image.open(img_path).convert("RGB")
-        width, height = img.size[0], img.size[1]  
+        width, height = img.size[0], img.size[1]
         
+        boxes = []
+
         if self.datatype == 'train':
             annotation = self.labels_dict[img_name]
-
-            boxes = []
 
             if annotation == "":
                 target = np.array(0)
             else:
                 target = np.array(1)
-            """
-            if type(annotation) == str:
-                annotation_list = annotation.split(';')
-                for anno in annotation_list:
-                    x = []
-                    y = []
-                
-                    anno = anno[2:]
-                    anno = anno.split(' ')
-                    for i in range(len(anno)):
-                        if i % 2 == 0:
-                            x.append(float(anno[i]))
-                        else:
-                            y.append(float(anno[i]))
-                        
-                    xmin = min(x)/width * 600
-                    xmax = max(x)/width * 600
-                    ymin = min(y)/height * 600
-                    ymax = max(y)/height * 600
-                    boxes.append([xmin, ymin, xmax, ymax])
 
-            if len(boxes) > 0:
-                target = np.array(1)
-            else:
-                target = np.array(0)
-            """
             # convert everything into a torch.Tensor
             #boxes = torch.as_tensor(boxes, dtype=torch.float32)
             # there is only one class
@@ -91,7 +82,34 @@ class ForeignObjectDataset(object):
             if self.transform is not None:
                 img = self.transform(img)
 
-            return img, label
+            if self.output_loc:
+                annotation = self.labels_dict[img_name]
+                if type(annotation) == str:
+                    annotation_list = annotation.split(';')
+                    for anno in annotation_list:
+                        x = []
+                        y = []
+                    
+                        anno = anno[2:]
+                        anno = anno.split(' ')
+                        for i in range(len(anno)):
+                            if i % 2 == 0:
+                                x.append(float(anno[i]))
+                            else:
+                                y.append(float(anno[i]))
+                            
+                        xmin = min(x)/width * self.config.DATA.IMG_SIZE
+                        xmax = max(x)/width * self.config.DATA.IMG_SIZE
+                        ymin = min(y)/height * self.config.DATA.IMG_SIZE
+                        ymax = max(y)/height * self.config.DATA.IMG_SIZE
+                        boxes.append([xmin, ymin, xmax, ymax])
+
+                return img, img_name, boxes
+
+            if self.output_name:
+                return img, label, img_name
+            else:
+                return img, label
         
         if self.datatype == 'test':
             
@@ -103,7 +121,33 @@ class ForeignObjectDataset(object):
             if self.transform is not None:
                 img = self.transform(img)
 
-            return img, label
+            if self.output_loc:
+                annotation = self.labels_dict[img_name]
+                if type(annotation) == str:
+                    annotation_list = annotation.split(';')
+                    for anno in annotation_list:
+                        x = []
+                        y = []
+                    
+                        anno = anno[2:]
+                        anno = anno.split(' ')
+                        for i in range(len(anno)):
+                            if i % 2 == 0:
+                                x.append(float(anno[i]))
+                            else:
+                                y.append(float(anno[i]))
+                            
+                        xmin = min(x)/width * self.config.DATA.IMG_SIZE
+                        xmax = max(x)/width * self.config.DATA.IMG_SIZE
+                        ymin = min(y)/height * self.config.DATA.IMG_SIZE
+                        ymax = max(y)/height * self.config.DATA.IMG_SIZE
+                        boxes.append([xmin, ymin, xmax, ymax])
+                return img, img_name, boxes
+
+            if self.output_name:
+                return img, label, img_name
+            else:
+                return img, label
 
     def __len__(self):
         return len(self.image_files_list)

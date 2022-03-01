@@ -146,7 +146,7 @@ def build_dataset(is_train, config):
     return dataset, nb_classes
 
 
-def build_test_dataset(is_test, config):
+def build_test_dataset(is_test, config, output_loc=False, output_name=False):
     transform = build_transform(False, config)
     if config.DATA.DATASET == 'OCXR':
         prefix = 'test' if is_test else 'dev'
@@ -159,8 +159,9 @@ def build_test_dataset(is_test, config):
         labels_dict = dict(zip(labels.image_name,
                                      labels.annotation))
 
-        dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
-                                        labels_dict=labels_dict, transform=transform)
+        dataset = ForeignObjectDataset(config, datatype=prefix,
+                                        labels_dict=labels_dict, transform=transform,
+                                        output_loc=output_loc, output_name=output_name)
         nb_classes = 2
     elif config.DATA.DATASET == 'LVOT':
         prefix = 'test' if is_test else 'val'
@@ -173,7 +174,10 @@ def build_test_dataset(is_test, config):
 
         dataset = UKBiobankLVOTDataset(meta,
                                        datatype=prefix,
-                                       transform=transform)
+                                       transform=transform,
+                                       output_loc=output_loc,
+                                       output_name=output_name,
+                                       config=config)
         nb_classes = 2
     else:
         raise NotImplementedError("We only support testing on LVOT and OCXR Now.")

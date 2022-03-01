@@ -6,10 +6,16 @@
 # --------------------------------------------------------
 
 import os
+import copy
 from tabnanny import check
+import numpy as np
+import pandas as pd
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
+
+from PIL import Image
+import matplotlib.cm as mpl_color_map
 
 from sklearn.metrics import roc_auc_score
 
@@ -196,6 +202,26 @@ def list_all_checkpoints(output_dir):
     print(f"All checkpoints founded in {output_dir}: {checkpoints}")
     return checkpoints
 
+
+def find_best_checkpoint(output_dir, criterion='auc_val'):
+    checkpoints = os.listdir(output_dir)
+    checkpoints = [ckpt for ckpt in checkpoints if ckpt.endswith('pth')]
+    checkpoints = [os.path.join(output_dir, ckpt) for ckpt in checkpoints]
+    checkpoints = list(sorted(checkpoints, key=os.path.getmtime))
+
+    stats_file = os.path.join(output_dir, 'summary_test.csv')
+    df = pd.read_csv(stats_file)
+
+    idx = (df[criterion].idxmax())
+    print(idx)
+    entry_id = str(int(df.loc[idx]['epoch']))
+    print(entry_id)
+    for checkpoint in checkpoints:
+        if entry_id in checkpoint.split('/')[-1]:
+            return [checkpoint]
+
+
+
     
 def reduce_tensor(tensor):
     rt = tensor.clone()
@@ -212,3 +238,67 @@ def calculate_roc_auc(output, target):
     auc = roc_auc_score(target.cpu().numpy(), probs[:, 1])
 
     return auc
+
+
+def apply_colormap_on_image(org_im, activation, colormap_name):
+    """
+        Apply heatmap on image
+    Args:
+        org_img (PIL img): Original image
+        activation_map (numpy arr): Activation map (grayscale) 0-255
+        colormap_name (str): Name of the colormap
+    """
+    # Get colormap
+    color_map = mpl_color_map.get_cmap(colormap_name)
+    no_trans_heatmap = color_map(activation)
+    # Change alpha channel in colormap to make sure original image is displayed
+    heatmap = copy.copy(no_trans_heatmap)
+    heatmap[:, :, 3] = 0.4
+    heatmap = Image.fromarray((heatmap*255).astype(np.uint8))
+    no_trans_heatmap = Image.fromarray((no_trans_heatmap*255).astype(np.uint8))
+
+    # Apply heatmap on iamge
+    heatmap_on_image = Image.new("RGBA", org_im.size)
+    heatmap_on_image = Image.alpha_composite(heatmap_on_image, org_im.convert('RGBA'))
+    heatmap_on_image = Image.alpha_composite(heatmap_on_image, heatmap)
+    return no_trans_heatmap, heatmap_on_image
+
+
+def format_np_output(np_arr):
+    """
+        This is a (kind of) bandaid fix to streamline saving procedure.
+        It converts all the outputs to the same format which is 3xWxH
+        with using sucecssive if clauses.
+    Args:
+        im_as_arr (Numpy array): Matrix of shape 1xWxH or WxH or 3xWxH
+    """
+    # Phase/Case 1: The np arr only has 2 dimensions
+    # Result: Add a dimension at the beginning
+    if len(np_arr.shape) == 2:
+        np_arr = np.expand_dims(np_arr, axis=0)
+    # Phase/Case 2: Np arr has only 1 channel (assuming first dim is channel)
+    # Result: Repeat first channel and convert 1xWxH to 3xWxH
+    if np_arr.shape[0] == 1:
+        np_arr = np.repeat(np_arr, 3, axis=0)
+    # Phase/Case 3: Np arr is of shape 3xWxH
+    # Result: Convert it to WxHx3 in order to make it saveable by PIL
+    if np_arr.shape[0] == 3:
+        np_arr = np_arr.transpose(1, 2, 0)
+    # Phase/Case 4: NP arr is normalized between 0-1
+    # Result: Multiply with 255 and change type to make it saveable by PIL
+    if np.max(np_arr) <= 1:
+        np_arr = (np_arr*255).astype(np.uint8)
+    return np_arr
+
+
+def save_image(im, path):
+    """
+        Saves a numpy matrix or PIL image as an image
+    Args:
+        im_as_arr (Numpy array): Matrix of shape DxWxH
+        path (str): Path to the image
+    """
+    if isinstance(im, (np.ndarray, np.generic)):
+        im = format_np_output(im)
+        im = Image.fromarray(im)
+    im.save(path)
