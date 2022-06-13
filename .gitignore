@@ -131,3 +131,6 @@ dmypy.json
 # MacOS temp files
 *.DS_Store
 ._*
+
+# Model Save Folder
+save/
