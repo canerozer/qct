@@ -17,14 +17,14 @@ class ForeignObjectDataset(object):
     def __init__(self, config, datatype='train', transform=True, labels_dict={}, 
                  output_name=False, output_loc=False,
                  shuffle=True, seed=1):
+        print(config)
         datafolder = os.path.join(config.DATA.DATA_PATH, datatype)
         # datafolder = os.path.join(datafolder, datatype)
         self.datafolder = datafolder
         self.datatype = datatype
         if output_loc:
             labels_dict = dict(filter(lambda x: x[1] != '', labels_dict.items()))
-        if output_name:
-            self.output_name = output_name
+        self.output_name = output_name
         self.labels_dict = labels_dict
         self.image_files_list = [s for s in sorted(os.listdir(datafolder)) if s in labels_dict.keys()]
         self.transform = transform

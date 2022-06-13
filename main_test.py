@@ -308,7 +308,7 @@ def validate(config, data_loader, model):
 def throughput(data_loader, model, logger):
     model.eval()
 
-    for idx, (images, _, _, _) in enumerate(data_loader):
+    for idx, (images, _, _) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
         for i in range(50):

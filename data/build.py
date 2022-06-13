@@ -124,7 +124,7 @@ def build_dataset(is_train, config):
         labels_dict = dict(zip(labels.image_name,
                                      labels.annotation))
 
-        dataset = ForeignObjectDataset(config.DATA.DATA_PATH, datatype=prefix,
+        dataset = ForeignObjectDataset(config, datatype=prefix,
                                         labels_dict=labels_dict, transform=transform)
         nb_classes = 2
     elif config.DATA.DATASET == 'LVOT':
