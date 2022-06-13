@@ -249,6 +249,9 @@ def update_config(config, args):
         config.EVAL_MODE = True
     if args.throughput:
         config.THROUGHPUT_MODE = True
+    if args.seed:
+        config.SEED = args.seed
+        config.MODEL.NAME += "_seed" + str(args.seed)
 
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank
