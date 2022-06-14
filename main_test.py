@@ -76,6 +76,8 @@ def parse_option():
                         help='Evaluate on all of the available models given a config')
     parser.add_argument('--debug', action='store_true',
                         help='Entering the debug mode')
+    parser.add_argument('--seed', type=int, help='Define seed', default=0)
+
 
     # distributed training
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
