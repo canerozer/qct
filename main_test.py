@@ -186,6 +186,8 @@ def main(config, args_aux):
     result_dump = {'epoch':[], 'acc_val':[], 'auc_val':[], 'loss_val':[],
                    'acc_test':[], 'auc_test':[], 'loss_test':[], 'throughput':[]}
     thpt = None
+    stats_val = None
+    stats_test = None
     for d, checkpoint_path in enumerate(checkpoint_paths):
     
         epoch = os.path.basename(checkpoint_path).split('_')[-1].split('.')[0]
@@ -212,9 +214,10 @@ def main(config, args_aux):
         result_dump['loss_test'].append(loss_test)
         result_dump['throughput'].append(thpt)
 
-    df = pd.DataFrame(result_dump)
-    df.to_csv(os.path.join(config.OUTPUT, 'summary_test.csv'))
-    print(os.path.join(config.OUTPUT, 'summary_test.csv'))
+    if args_aux.eval_all_models:
+        df = pd.DataFrame(result_dump)
+        df.to_csv(os.path.join(config.OUTPUT, 'summary_test.csv'))
+        print(os.path.join(config.OUTPUT, 'summary_test.csv'))
 
     df_val = pd.DataFrame(stats_val)
     df_val.to_csv(os.path.join(config.OUTPUT, 'stats_val.csv'))
