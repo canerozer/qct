@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
 
-class UKBiobankLVOTDataset(Dataset):
+class LVOTDataset(Dataset):
     def __init__(self, label_file, datatype=None, shuffle=True, transform=None, seed=0, debug=False,
                  output_loc=False, output_name=False, config=None, segm_folder=None):
         self.label_file = label_file

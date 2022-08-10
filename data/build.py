@@ -18,7 +18,7 @@ from timm.data import create_transform
 from .cached_image_folder import CachedImageFolder
 from .samplers import SubsetRandomSampler, RADistributedSampler
 from .objectcxr import ForeignObjectDataset
-from .lvot import UKBiobankLVOTDataset
+from .lvot import LVOTDataset
 
 
 try:
@@ -136,7 +136,7 @@ def build_dataset(is_train, config):
         # val = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/val.txt
         # test = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/test.txt
 
-        dataset = UKBiobankLVOTDataset(meta,
+        dataset = LVOTDataset(meta,
                                        datatype=prefix,
                                        transform=transform)
         nb_classes = 2
@@ -172,7 +172,7 @@ def build_test_dataset(is_test, config, output_loc=False, output_name=False):
         # val = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/val.txt
         # test = /home/ilkay/Documents/caner/datasets/mdai/create_lvot_dataset/jpg_slices/labels/test.txt
 
-        dataset = UKBiobankLVOTDataset(meta,
+        dataset = LVOTDataset(meta,
                                        datatype=prefix,
                                        transform=transform,
                                        output_loc=output_loc,
